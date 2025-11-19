@@ -6,6 +6,10 @@ from bleak.backends import device
 from bleak.backends.service import BleakGATTService
 from bleak.exc import BleakError
 
+# global vars
+left_click_down = False
+right_click_down = False
+
 
 async def scan_ble_devices() -> None:
     """
@@ -197,6 +201,8 @@ def notification_handler(sender, data):
         
     # For the motion
     cursor_speed_mult = 0.1
+    global left_click_down
+    global right_click_down
     
     import pyautogui    
     # Up: data[0]}
@@ -211,12 +217,36 @@ def notification_handler(sender, data):
     if data[1] < 25 and data[2] < 25 and data[3] < 25:
         # Left click
         if data[0] < 25:
-            print("Left click")
-            pyautogui.click()
+            if not left_click_down:
+                if right_click_down:
+                    print("Right click Up")
+                    pyautogui.mouseUp(button='right')
+                    right_click_down = False
+            
+                print("Left click Down")
+                pyautogui.mouseDown(button="left")
+                left_click_down = True
         # Right click
         else:
-            print("Right click")
-            pyautogui.click(button="right")
+            if not right_click_down:
+            	if left_click_down:
+            	    print("Left click up")
+            	    pyautogui.mouseUp(button='left')
+            	    left_click_down = False
+            	
+            	print("Right click Down")
+            	pyautogui.mouseDown(button="right")
+            	right_click_down = True
+        return
+    
+    if left_click_down:
+        print("Left click up")
+        pyautogui.mouseUp(button='left')
+        left_click_down = False
+    if right_click_down:
+        print("Right click up")
+        pyautogui.mouseUp(button='right')
+        right_click_down = False
     
     # move the cursor
     # The values  are 0-255, 

@@ -38,6 +38,7 @@ Service: 14
 Service: 23
 	Characteristic: 24
 		meaning: Seems to be the value for how far away the hand is from each point
+		
 Service: 27
 	Characteristic: 28
 		meaning: unknown, returns 20 null bytes
