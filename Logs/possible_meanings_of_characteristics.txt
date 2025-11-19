@@ -1,0 +1,55 @@
+Service 1:
+	Characteristic: 2
+		meaning: Device name
+	
+	Characteristic: 4
+		value: \x00\x00
+		meaning: 'Appearance', specifies the type of device this is, it is a miscellaneous device
+		
+	Characteristic: 6
+		value: \x08\x00\x18\x00\x00\x00\x90\x01
+		meaning: 'Peripheral Preferred Connection Parameters', this specifies how the bluetooth device will react to requests
+	
+	Characteristic: 8
+		value: \x01
+		meaning: 'Central Address Resolution', security thing
+
+Service 10:
+	Characteristic: 11
+		meaning: used to indicate to client devices that an action has finished e.g. the firmware has finished updating. This is part of the standard
+
+Service: 14
+	Characteristic: 15
+		value: 'Kano Computing'
+		meaning: seems to displays manufacturer
+		
+	Characteristic: 17
+		value: '1.1.1'
+		meaning: seems like a version number, possibly the firmware version number
+	
+	Characteristic: 19
+		value: '0'
+		meaning: unknown
+	
+	Characteristic: 21
+		value: '1'
+		meaning: unknown
+
+Service: 23
+	Characteristic: 24
+		meaning: Seems to be the value for how far away the hand is from each point
+Service: 27
+	Characteristic: 28
+		meaning: unknown, returns 20 null bytes
+		
+	Characteristic: 30
+		meaning: 'Keep alive', possibly write 1 to keep the device connected until it gets rewritten 0
+	
+	Characteristic: 33
+		meaning: 'Battery', returns what seems to be a percentage of battery life
+	
+	Characteristic: 37
+		meaning: 'Global Brightness', possibly to do with how bright the lights should be when activated
+
+Service: 40
+	reason: updating firmware

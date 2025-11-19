@@ -64,9 +64,6 @@ async def get_all_charcateristics(address : str) -> None:
                 print()
             print("-" * 20)
 
-def notification_handler(sender, data):
-    print(f"Notification from {sender}: {data}")
-
 async def get_all_characteristic_values(address : str, service_handle : int) -> None:
     """
     Gets all the characteristic values of a certain service on a device\n
@@ -75,7 +72,7 @@ async def get_all_characteristic_values(address : str, service_handle : int) -> 
         'service_handle' should be the handle of the service
     """
     # Connect
-    async with BleakClient(address, use_cached_services=False, pair=True) as client:
+    async with BleakClient(address, use_cached_services=False) as client:
         # If not Connected
         if not client.is_connected:
             print("Failed to connect")
@@ -98,32 +95,132 @@ async def get_all_characteristic_values(address : str, service_handle : int) -> 
 
         # Now we can read each characteristic
         for characteristic in targeted_service.characteristics:
-            # PRint basic info
+            print("-"*20)
+            # Print basic info
             print(f"Characteristic: {characteristic.handle}")
             print(f"Description: {characteristic.description}")
+		
+            # Read the descriptors, if they exist
+            if characteristic.descriptors: print("\nDescriptors")
+            for desc in characteristic.descriptors:
+                print(f"Descriptor Handle: {desc.handle}")
+                desc_val = await client.read_gatt_descriptor(desc.handle)
+                print(f"value: {desc_val}\n")
+
 
             # Check the characteristic supports read first
+            print("Base characteristic")
             can_read : bool = "read" in characteristic.properties
             if not can_read:
-                print("Does not support read")
-                #continue
+                print("Does not support read\n")
+                continue
 
             # Read from charcateristic
             try:
-                char_value = await client.read_gatt_char(characteristic.uuid)
+                char_value = await client.read_gatt_char(characteristic.handle)
                 print(f"value: {char_value}")
             except BleakError as e:
                 print(f"Error Reading: {str(e)}")
 
             print()
 
-async def test():
-     async with BleakClient("FD:D3:9D:E7:40:E0") as client:
-         print(client.is_connected)
-         await asyncio.sleep(1)
-         print(client.is_connected)
-         e = await client.read_gatt_char("11a70301-f691-4b93-a6f4-0968f5b648f8")
-         print(e)
+async def write_to_characteristic(address : str, characteristic_handle : int, new_value : bytes) -> None:
+    """
+    Used to write new data into a characteristic\n
+        'address' is the Bluetooth MAC Address of the target device\n
+        'characteristic_handle' is the handle of the characteristic to be written to\n
+        'new_value' is the new value to be written to this characteristic
+    """
+    async with BleakClient(address, use_caches_services=False) as client:
+        # If the client failed to connect
+        if not client.is_connected:
+            print("Failed to connect")
+            return
+        
+        print(f"Connected to {client.name if client.name else client.address}")
+        
+        # Write the data
+        try:
+            await client.write_gatt_char(characteristic_handle, new_value, response=True)
+        except BleakError as e:
+            print(f"Error Writing: {str(e)}")
+            
+
+def write_handler(address : str):
+    """
+    A function that provides a UI for the user to write data into characteristics
+    """
+    print("Which characteristic do you want to write to:")
+    print("(N)ame of the device")
+    print("(U)nknown Characteristic 28")
+    print("(K)eep alive")
+    print("(G)lobal brightness")
+    inp = input().lower().strip()
+    
+    match inp:
+        case "n": 
+            print("Enter the new name")
+            name = input().strip()
+            asyncio.run(write_to_characteristic(address, 2, bytes(name, encoding="utf-8")))
+        case "u":
+        	print("?")
+        	new = input().strip().lower()
+        	asyncio.run(write_to_characteristic(address, 28, bytes(new, encoding="utf-8")))
+        case "k":
+            while True:
+                print("0 or 1")
+                try:
+                    keep = int(input().strip())
+                    if keep not in [0, 1]: raise IndexError
+
+                    asyncio.run(write_to_characteristic(address, 30, bytes(str(keep), encoding="utf-8")))
+                    break
+                except (IndexError, ValueError):
+                    print("It must be a one or zero")
+        case "g":
+            while True:
+                print("0 to 255")
+                try:
+                    keep = int(input().strip())
+                    if keep < 0 or keep > 255: raise IndexError
+                
+                    asyncio.run(write_to_characteristic(address, 30, bytes(str(keep), encoding="utf-8")))
+                    break
+                except (IndexError, ValueError):
+                    print("It must be between 0 and 255")
+
+        	
+
+
+
+def main() -> None:
+    """
+    The main funcion that gives the user a semi-decent text interface
+    """
+
+    address = "FD:D3:9D:E7:40:E0"
+
+    print("Select an option:")
+    print("(S)can for bluetooth devices")
+    print("(M)ap out all services and characteristics of the device")
+    print("(R)ead all the characteristic values of a service")
+    print("(W)rite a new value to a characteristic")
+    inp = input().strip().lower()
+
+    
+    match inp:
+        case "s": asyncio.run(scan_ble_devices())
+        case "m": asyncio.run(get_all_charcateristics(address))
+        case "r": 
+        	handle = int(input("which service (input handle number): ").strip())
+        	asyncio.run(get_all_characteristic_values(address, handle))
+        case "w": write_handler(address)
+        case _: print("unknown option")
+    return
 
 if __name__ == "__main__":
-    asyncio.run(test())
+    try:
+        main()
+    except EOFError:
+        print("Device disconnected unexpectedly; ignoring EOFError from dbus-fast.")
+    
